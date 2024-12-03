@@ -2,7 +2,7 @@ use std::ffi::{CStr, CString};
 use std::mem;
 use std::os::raw::*;
 use std::ptr::null_mut;
-use std::sync::Arc;
+use std::rc::Rc;
 
 use crate::webview as bindings;
 
@@ -24,7 +24,7 @@ pub enum SizeHint {
 
 #[derive(Clone)]
 pub struct Webview {
-    inner: Arc<bindings::webview_t>,
+    inner: Rc<bindings::webview_t>,
     url: String,
 }
 
@@ -33,7 +33,7 @@ unsafe impl Sync for Webview {}
 
 impl Drop for Webview {
     fn drop(&mut self) {
-        if Arc::strong_count(&self.inner) == 0 {
+        if Rc::strong_count(&self.inner) == 0 {
             unsafe {
                 bindings::webview_terminate(*self.inner);
                 bindings::webview_destroy(*self.inner);
@@ -46,14 +46,14 @@ impl Webview {
     pub fn create(debug: bool, window: Option<&mut Window>) -> Webview {
         if let Some(w) = window {
             Webview {
-                inner: Arc::new(unsafe {
+                inner: Rc::new(unsafe {
                     bindings::webview_create(debug as c_int, w as *mut Window as *mut _)
                 }),
                 url: "".to_string(),
             }
         } else {
             Webview {
-                inner: Arc::new(unsafe { bindings::webview_create(debug as c_int, null_mut()) }),
+                inner: Rc::new(unsafe { bindings::webview_create(debug as c_int, null_mut()) }),
                 url: "".to_string(),
             }
         }
@@ -118,7 +118,7 @@ impl Webview {
             F: FnOnce(&mut Webview) + Send + 'static,
         {
             let mut webview = Webview {
-                inner: Arc::new(webview),
+                inner: Rc::new(webview),
                 url: "".to_string(),
             };
             let closure: Box<F> = unsafe { Box::from_raw(arg as *mut F) };
