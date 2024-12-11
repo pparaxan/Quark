@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 Allow: /
-Sitemap: https://pparaxan.codeberg.page/sitemap.xml
+Sitemap: https://pparaxan.codeberg.page/Quark/sitemap.xml
