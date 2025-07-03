@@ -1,7 +1,8 @@
 const std = @import("std");
 const binder = @import("binder");
+const args = @import("arguments.zig");
 
-pub fn modules(b: *std.Build, lib_webview: *std.Build.Dependency, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) !void {
+pub fn modules(b: *std.Build, lib_webview: *std.Build.Dependency, lib_httpz: *std.Build.Dependency, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) !void {
     const frontend = try binder.generate(b, .{
         .source_dir = "src_quark",
         .target_file = "binder.zig",
@@ -23,5 +24,8 @@ pub fn modules(b: *std.Build, lib_webview: *std.Build.Dependency, target: std.Bu
     });
 
     libquark_mod.addImport("webview", webview_mod);
+    libquark_mod.addImport("httpz", lib_httpz.module("httpz"));
     libquark_mod.addImport("frontend", frontend_mod);
+
+    args.arguments(b, libquark_mod);
 }
