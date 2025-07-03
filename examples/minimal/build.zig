@@ -4,7 +4,11 @@ pub fn build(b: *@import("std").Build) void {
         .preferred_optimize_mode = .Debug,
     });
 
-    const lib_quark = b.dependency("quark", .{});
+    const reload = b.option(bool, "reload", "Enable hot-reload") orelse false;
+
+    const lib_quark = b.dependency("quark", .{
+        .reload = reload,
+    });
 
     const executable = b.addExecutable(.{
         .name = "minimal",

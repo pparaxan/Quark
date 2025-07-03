@@ -1,6 +1,7 @@
 const std = @import("std");
 const binder = @import("binder");
 const config = @import("src/config.zig");
+const arguments = @import("src/arguments.zig");
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -8,19 +9,28 @@ pub fn build(b: *std.Build) !void {
         .preferred_optimize_mode = .ReleaseSafe,
     });
 
-    const lib_webview = b.dependency("webview", .{});
+    const options = b.addOptions();
+    const argument_reload = b.option(bool, "reload", "Enable automatic backend/frontend rebuild") orelse false;
+    options.addOption(bool, "reload", argument_reload);
 
-    const webview = b.addTranslateC(.{
-        .root_source_file = lib_webview.path("core/include/webview/webview.h"),
-        .optimize = optimize,
+
+    const lib_webview = b.dependency("webview", .{});
+    const lib_httpz = b.dependency("httpz", .{
         .target = target,
-    }).createModule();
+        .optimize = optimize,
+    });
 
     const frontend = try binder.generate(b, .{
         .source_dir = "src_quark",
         .target_file = "binder.zig",
         .namespace = "quark_frontend",
     });
+
+    const webview_mod = b.addTranslateC(.{
+        .root_source_file = lib_webview.path("core/include/webview/webview.h"),
+        .optimize = optimize,
+        .target = target,
+    }).createModule();
 
     const frontend_mod = b.createModule(.{
         .root_source_file = .{ .cwd_relative = frontend },
@@ -29,8 +39,12 @@ pub fn build(b: *std.Build) !void {
     const libquark_mod = b.addModule("libquark", .{
         .root_source_file = b.path("src/root.zig"),
     });
-    libquark_mod.addImport("webview", webview);
+
+    libquark_mod.addImport("webview", webview_mod);
+    libquark_mod.addImport("httpz", lib_httpz.module("httpz"));
     libquark_mod.addImport("frontend", frontend_mod);
+
+    libquark_mod.addOptions("reload", options);
 
     const libquark = b.addLibrary(.{
         .name = "quark",
@@ -45,8 +59,15 @@ pub fn build(b: *std.Build) !void {
     libquark.addIncludePath(lib_webview.path("core/include/webview/"));
     libquark.root_module.addCMacro("WEBVIEW_STATIC", "1");
     libquark.linkLibCpp();
-    libquark.root_module.addImport("webview", webview);
+    libquark.root_module.addImport("webview", webview_mod);
+    libquark.root_module.addImport("httpz", lib_httpz.module("httpz"));
     libquark.root_module.addImport("frontend", frontend_mod);
+
+    // libquark.root_module.define("enable_reload", if (argument_reload) "true" else "false"); // expose the argument to QuarkWindow.
+
+    // libquark.root_module.arguments = .{
+    //     .enable_reload = argument_reload,
+    // };
 
     switch (@import("builtin").os.tag) {
         .macos => {

@@ -10,6 +10,10 @@
         //     .hash = "put it here"
         // }
         .binder = .{ .url = "https://codeberg.org/pparaxan/binder/archive/v2.0.1.tar.gz", .hash = "binder-1.0.0-KglZgfEXAADShghDw00QxgE2b5ctFYPUML2Icdwybk8u" },
+        .httpz = .{
+            .url = "git+https://github.com/karlseguin/http.zig?ref=master#68e760cc9eed0722dfcae69bda0ed9406bb83be2",
+            .hash = "httpz-0.0.0-PNVzrOu4BgCBCARbwWC7MUn7_MqnGwUNfTXEUryOns06"
+        },
     },
     .paths = .{
         "build.zig",
